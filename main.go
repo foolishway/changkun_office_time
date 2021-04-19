@@ -15,11 +15,10 @@ func main() {
 	var officeTime int
 	var preStatus string
 	var startDate int = time.Now().Day()
-	var preDate int
+	var preDate int = startDate + 1
 	var officePreTime time.Time
 
 	ticker := time.Tick(10 * time.Second)
-
 	for range ticker {
 		curDate := time.Now().Day()
 		// start by tomorrow
@@ -28,16 +27,23 @@ func main() {
 		}
 
 		if preDate < curDate {
-			f, err := os.OpenFile("./office_time", os.O_CREATE|os.O_RDWR, 0755)
-			defer f.Close()
-			if err != nil {
-				panic(err)
-			}
-			msg := fmt.Sprintf("%d: %d", preDate, officeTime)
-			fmt.Fprintf(f, msg)
+			var wg sync.WaitGroup
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				f, err := os.OpenFile("./office_time", os.O_CREATE|os.O_RDWR, 0755)
+				defer f.Close()
+				if err != nil {
+					panic(err)
+				}
+				msg := fmt.Sprintf("%d: %d", preDate, officeTime)
+				fmt.Fprintf(f, msg)
+			}()
+			wg.Wait()
 
 			officeTime = 0
 			preStatus = ""
+			preDate = time.Now().Day()
 		}
 
 		var wg sync.WaitGroup
